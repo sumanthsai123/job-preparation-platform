@@ -16,6 +16,8 @@ import com.jobprep.job_preparation_platform.User;
 import com.jobprep.job_preparation_platform.UserRepository;
 import com.jobprep.job_preparation_platform.dto.QuizAnswerRequestDTO;
 import com.jobprep.job_preparation_platform.dto.QuizAttemptResponseDTO;
+import com.jobprep.job_preparation_platform.exception.DuplicateAnswerException;
+import com.jobprep.job_preparation_platform.exception.InvalidQuestionException;
 import com.jobprep.job_preparation_platform.exception.QuizNotFoundException;
 
 @Service
@@ -77,10 +79,34 @@ public class QuizAttemptService {
                                 .orElseThrow(() -> new RuntimeException(
                                                 "Quiz attempt not found with id: " + attemptId));
 
+                if ("COMPLETED".equals(attempt.getStatus())) {
+                        throw new IllegalStateException(
+                                        "Cannot submit answers for a completed quiz attempt.");
+                }
+
                 Question question = questionRepository.findById(request.getQuestionId())
                                 .orElseThrow(() -> new RuntimeException(
                                                 "Question not found with id: "
                                                                 + request.getQuestionId()));
+
+                boolean questionBelongsToQuiz = attempt.getQuiz()
+                                .getQuestions()
+                                .stream()
+                                .anyMatch(quizQuestion -> quizQuestion.getId().equals(question.getId()));
+
+                if (!questionBelongsToQuiz) {
+                        throw new InvalidQuestionException(
+                                        "This question does not belong to the quiz for this attempt.");
+                }
+
+                if (quizAttemptAnswerRepository
+                                .existsByQuizAttemptIdAndQuestionId(
+                                                attemptId,
+                                                request.getQuestionId())) {
+
+                        throw new DuplicateAnswerException(
+                                        "You have already answered this question in this quiz attempt.");
+                }
 
                 boolean isCorrect = question.getCorrectAnswer()
                                 .equalsIgnoreCase(request.getSelectedAnswer());
@@ -102,10 +128,26 @@ public class QuizAttemptService {
                                                 "Quiz attempt not found with id: " + attemptId));
 
                 if ("COMPLETED".equals(attempt.getStatus())) {
-                        throw new RuntimeException("Quiz attempt is already completed");
+                        throw new IllegalStateException(
+                                        "This quiz attempt has already been completed.");
                 }
 
-                List<QuizAttemptAnswer> answers = quizAttemptAnswerRepository.findByQuizAttemptId(attemptId);
+                List<QuizAttemptAnswer> answers = quizAttemptAnswerRepository
+                                .findByQuizAttemptId(attemptId);
+
+                int totalQuestions = attempt.getQuiz()
+                                .getQuestions()
+                                .size();
+
+                if (answers.size() < totalQuestions) {
+                        throw new IllegalStateException(
+                                        "Please answer all questions before completing the quiz.");
+                }
+
+                if (answers.isEmpty()) {
+                        throw new IllegalStateException(
+                                        "Cannot complete a quiz without answering any questions.");
+                }
 
                 int score = 0;
 

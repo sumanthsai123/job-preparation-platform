@@ -8,4 +8,9 @@ public interface QuizAttemptAnswerRepository
         extends JpaRepository<QuizAttemptAnswer, Integer> {
 
     List<QuizAttemptAnswer> findByQuizAttemptId(Integer quizAttemptId);
+
+    boolean existsByQuizAttemptIdAndQuestionId(
+            Integer quizAttemptId,
+            Integer questionId);
+            
 }

@@ -92,4 +92,31 @@ public class GlobalExceptionHandler {
                                 .status(HttpStatus.BAD_REQUEST)
                                 .body(error);
         }
+
+        @ExceptionHandler(DuplicateAnswerException.class)
+        public ResponseEntity<ErrorResponse> handleDuplicateAnswer(
+                        DuplicateAnswerException ex) {
+
+                ErrorResponse error = new ErrorResponse(
+                                409,
+                                ex.getMessage());
+
+                return ResponseEntity
+                                .status(HttpStatus.CONFLICT)
+                                .body(error);
+        }
+
+        @ExceptionHandler(IllegalStateException.class)
+        public ResponseEntity<ErrorResponse> handleIllegalState(
+                        IllegalStateException ex) {
+
+                ErrorResponse error = new ErrorResponse(
+                                409,
+                                ex.getMessage());
+
+                return ResponseEntity
+                                .status(HttpStatus.CONFLICT)
+                                .body(error);
+        }
+
 }

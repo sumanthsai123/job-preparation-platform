@@ -2,7 +2,9 @@ package com.jobprep.job_preparation_platform.service;
 
 import java.util.List;
 
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
 
 import com.jobprep.job_preparation_platform.Question;
 import com.jobprep.job_preparation_platform.QuestionRepository;
@@ -43,10 +45,10 @@ public class QuizAttemptService {
                 this.questionRepository = questionRepository;
         }
 
-        public QuizAttemptResponseDTO startAttempt(Integer userId, Integer quizId) {
+        public QuizAttemptResponseDTO startAttempt(String email, Integer quizId) {
 
-                User user = userRepository.findById(userId)
-                                .orElseThrow(() -> new RuntimeException("User not found with id: " + userId));
+                User user = userRepository.findByEmail(email)
+                                .orElseThrow(() -> new RuntimeException("User not found."));
 
                 Quiz quiz = quizRepository.findById(quizId)
                                 .orElseThrow(() -> new QuizNotFoundException(
@@ -72,12 +74,19 @@ public class QuizAttemptService {
         }
 
         public void submitAnswer(
+                        String email,
                         Integer attemptId,
                         QuizAnswerRequestDTO request) {
 
                 QuizAttempt attempt = quizAttemptRepository.findById(attemptId)
                                 .orElseThrow(() -> new RuntimeException(
                                                 "Quiz attempt not found with id: " + attemptId));
+
+                if (!attempt.getUser().getEmail().equalsIgnoreCase(email)) {
+                        throw new ResponseStatusException(
+                                        HttpStatus.FORBIDDEN,
+                                        "You are not allowed to access this quiz attempt.");
+                }
 
                 if ("COMPLETED".equals(attempt.getStatus())) {
                         throw new IllegalStateException(
@@ -108,24 +117,42 @@ public class QuizAttemptService {
                                         "You have already answered this question in this quiz attempt.");
                 }
 
-                boolean isCorrect = question.getCorrectAnswer()
-                                .equalsIgnoreCase(request.getSelectedAnswer());
+                String selectedAnswer = request.getSelectedAnswer().trim();
+
+                if (!selectedAnswer.matches("[A-Da-d]")) {
+                        throw new InvalidQuestionException(
+                                        "Invalid answer choice. Please select A, B, C, or D.");
+                }
+
+                boolean isCorrect = question.getCorrectAnswer() != null
+                                && question.getCorrectAnswer().equalsIgnoreCase(selectedAnswer);
 
                 QuizAttemptAnswer answer = new QuizAttemptAnswer();
 
                 answer.setQuizAttempt(attempt);
                 answer.setQuestion(question);
-                answer.setSelectedAnswer(request.getSelectedAnswer());
+                answer.setSelectedAnswer(selectedAnswer);
                 answer.setIsCorrect(isCorrect);
 
                 quizAttemptAnswerRepository.save(answer);
         }
 
-        public QuizAttemptResponseDTO completeAttempt(Integer attemptId) {
+        public QuizAttemptResponseDTO completeAttempt(String email, Integer attemptId) {
 
                 QuizAttempt attempt = quizAttemptRepository.findById(attemptId)
                                 .orElseThrow(() -> new RuntimeException(
                                                 "Quiz attempt not found with id: " + attemptId));
+
+                // if (!attempt.getUser().getEmail().equalsIgnoreCase(email)) {
+                // throw new org.springframework.web.server.ResponseStatusException(
+                // org.springframework.http.HttpStatus.FORBIDDEN,
+                // "You are not allowed to access this quiz attempt.");
+                // }
+                if (!attempt.getUser().getEmail().equalsIgnoreCase(email)) {
+                        throw new ResponseStatusException(
+                                        HttpStatus.FORBIDDEN,
+                                        "You are not allowed to access this quiz attempt.");
+                }
 
                 if ("COMPLETED".equals(attempt.getStatus())) {
                         throw new IllegalStateException(

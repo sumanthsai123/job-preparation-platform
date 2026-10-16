@@ -1,5 +1,7 @@
 package com.jobprep.job_preparation_platform.controller;
 
+import org.springframework.security.core.Authentication;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -23,10 +25,12 @@ public class QuizAttemptController {
 
     @PostMapping("/start")
     public ResponseEntity<QuizAttemptResponseDTO> startAttempt(
-            @RequestParam Integer userId,
+            Authentication authentication,
             @RequestParam Integer quizId) {
 
-        QuizAttemptResponseDTO attempt = quizAttemptService.startAttempt(userId, quizId);
+        String email = authentication.getName();
+
+        QuizAttemptResponseDTO attempt = quizAttemptService.startAttempt(email, quizId);
 
         return ResponseEntity
                 .status(HttpStatus.CREATED)
@@ -36,19 +40,26 @@ public class QuizAttemptController {
     @PostMapping("/{attemptId}/answers")
     public ResponseEntity<String> submitAnswer(
             @PathVariable Integer attemptId,
-            @Valid @RequestBody QuizAnswerRequestDTO request) {
+            @Valid @RequestBody QuizAnswerRequestDTO request,
+            Authentication authentication) {
 
-        quizAttemptService.submitAnswer(attemptId, request);
+        String email = authentication.getName();
+
+        quizAttemptService.submitAnswer(email, attemptId, request);
 
         return ResponseEntity.ok("Answer submitted successfully");
     }
 
     @PostMapping("/{attemptId}/complete")
     public ResponseEntity<QuizAttemptResponseDTO> completeAttempt(
-            @PathVariable Integer attemptId) {
+            @PathVariable Integer attemptId,
+            Authentication authentication) {
 
-        QuizAttemptResponseDTO result = quizAttemptService.completeAttempt(attemptId);
+        String email = authentication.getName();
+
+        QuizAttemptResponseDTO result = quizAttemptService.completeAttempt(email, attemptId);
 
         return ResponseEntity.ok(result);
     }
+
 }

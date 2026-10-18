@@ -2,6 +2,10 @@ package com.jobprep.job_preparation_platform.service;
 
 import java.util.List;
 
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
@@ -196,5 +200,39 @@ public class QuizAttemptService {
                                 savedAttempt.getScore(),
                                 savedAttempt.getTotalQuestions(),
                                 savedAttempt.getStatus());
+        }
+
+        public Page<QuizAttemptResponseDTO> getMyAttempts(
+                        String email, int page, int size) {
+
+                if (page < 0) {
+                        throw new ResponseStatusException(
+                                        HttpStatus.BAD_REQUEST,
+                                        "Page number cannot be negative.");
+                }
+
+                if (size < 1 || size > 50) {
+                        throw new ResponseStatusException(
+                                        HttpStatus.BAD_REQUEST,
+                                        "Page size must be between 1 and 50.");
+                }
+
+                User user = userRepository.findByEmail(email)
+                                .orElseThrow(() -> new RuntimeException("User not found"));
+
+                Pageable pageable = PageRequest.of(
+                                page,
+                                size,
+                                Sort.by(Sort.Direction.DESC, "id"));
+
+                Page<QuizAttempt> attemptPage = quizAttemptRepository.findByUserId(user.getId(), pageable);
+
+                return attemptPage.map(attempt -> new QuizAttemptResponseDTO(
+                                attempt.getId(),
+                                attempt.getQuiz().getId(),
+                                attempt.getQuiz().getTitle(),
+                                attempt.getScore(),
+                                attempt.getTotalQuestions(),
+                                attempt.getStatus()));
         }
 }

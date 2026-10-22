@@ -2,9 +2,7 @@ package com.jobprep.job_preparation_platform.controller;
 
 import org.springframework.security.core.Authentication;
 
-
 import org.springframework.data.domain.Page;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -12,6 +10,7 @@ import org.springframework.web.bind.annotation.*;
 import com.jobprep.job_preparation_platform.dto.QuizAnswerRequestDTO;
 // import com.jobprep.job_preparation_platform.QuizAttempt;
 import com.jobprep.job_preparation_platform.dto.QuizAttemptResponseDTO;
+import com.jobprep.job_preparation_platform.dto.QuizResultResponseDTO;
 import com.jobprep.job_preparation_platform.service.QuizAttemptService;
 
 import jakarta.validation.Valid;
@@ -76,6 +75,18 @@ public class QuizAttemptController {
         Page<QuizAttemptResponseDTO> attempts = quizAttemptService.getMyAttempts(email, page, size);
 
         return ResponseEntity.ok(attempts);
+    }
+
+    @GetMapping("/{attemptId}/results")
+    public ResponseEntity<QuizResultResponseDTO> getAttemptResults(
+            @PathVariable Integer attemptId,
+            Authentication authentication) {
+
+        String email = authentication.getName();
+
+        QuizResultResponseDTO result = quizAttemptService.getAttemptResults(email, attemptId);
+
+        return ResponseEntity.ok(result);
     }
 
 }

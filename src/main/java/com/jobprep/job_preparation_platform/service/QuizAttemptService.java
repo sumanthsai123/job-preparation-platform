@@ -22,6 +22,8 @@ import com.jobprep.job_preparation_platform.User;
 import com.jobprep.job_preparation_platform.UserRepository;
 import com.jobprep.job_preparation_platform.dto.QuizAnswerRequestDTO;
 import com.jobprep.job_preparation_platform.dto.QuizAttemptResponseDTO;
+import com.jobprep.job_preparation_platform.dto.QuizResultAnswerDTO;
+import com.jobprep.job_preparation_platform.dto.QuizResultResponseDTO;
 import com.jobprep.job_preparation_platform.exception.DuplicateAnswerException;
 import com.jobprep.job_preparation_platform.exception.InvalidQuestionException;
 import com.jobprep.job_preparation_platform.exception.QuizNotFoundException;
@@ -234,5 +236,44 @@ public class QuizAttemptService {
                                 attempt.getScore(),
                                 attempt.getTotalQuestions(),
                                 attempt.getStatus()));
+        }
+
+        public QuizResultResponseDTO getAttemptResults(
+                        String email, Integer attemptId) {
+
+                QuizAttempt attempt = quizAttemptRepository.findById(attemptId)
+                                .orElseThrow(() -> new ResponseStatusException(
+                                                HttpStatus.NOT_FOUND,
+                                                "Quiz attempt not found with id: " + attemptId));
+
+                if (!attempt.getUser().getEmail().equalsIgnoreCase(email)) {
+                        throw new ResponseStatusException(
+                                        HttpStatus.FORBIDDEN,
+                                        "You are not allowed to access this quiz attempt.");
+                }
+
+                if (!"COMPLETED".equals(attempt.getStatus())) {
+                        throw new ResponseStatusException(
+                                        HttpStatus.BAD_REQUEST,
+                                        "Results are available only for completed quiz attempts.");
+                }
+
+                List<QuizAttemptAnswer> answers = quizAttemptAnswerRepository.findByQuizAttemptId(attemptId);
+
+                List<QuizResultAnswerDTO> answerDTOs = answers.stream()
+                                .map(answer -> new QuizResultAnswerDTO(
+                                                answer.getQuestion().getId(),
+                                                answer.getQuestion().getQuestionText(),
+                                                answer.getSelectedAnswer(),
+                                                Boolean.TRUE.equals(answer.getIsCorrect())))
+                                .toList();
+
+                return new QuizResultResponseDTO(
+                                attempt.getId(),
+                                attempt.getQuiz().getTitle(),
+                                attempt.getStatus(),
+                                attempt.getScore(),
+                                attempt.getTotalQuestions(),
+                                answerDTOs);
         }
 }

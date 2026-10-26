@@ -11,6 +11,7 @@ import com.jobprep.job_preparation_platform.dto.QuizAnswerRequestDTO;
 // import com.jobprep.job_preparation_platform.QuizAttempt;
 import com.jobprep.job_preparation_platform.dto.QuizAttemptResponseDTO;
 import com.jobprep.job_preparation_platform.dto.QuizResultResponseDTO;
+import com.jobprep.job_preparation_platform.dto.QuizStatisticsResponseDTO;
 import com.jobprep.job_preparation_platform.service.QuizAttemptService;
 
 import jakarta.validation.Valid;
@@ -87,6 +88,17 @@ public class QuizAttemptController {
         QuizResultResponseDTO result = quizAttemptService.getAttemptResults(email, attemptId);
 
         return ResponseEntity.ok(result);
+    }
+
+    @GetMapping("/my-statistics")
+    public ResponseEntity<QuizStatisticsResponseDTO> getMyStatistics(
+            Authentication authentication) {
+
+        String email = authentication.getName();
+
+        QuizStatisticsResponseDTO statistics = quizAttemptService.getMyStatistics(email);
+
+        return ResponseEntity.ok(statistics);
     }
 
 }

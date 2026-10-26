@@ -24,6 +24,7 @@ import com.jobprep.job_preparation_platform.dto.QuizAnswerRequestDTO;
 import com.jobprep.job_preparation_platform.dto.QuizAttemptResponseDTO;
 import com.jobprep.job_preparation_platform.dto.QuizResultAnswerDTO;
 import com.jobprep.job_preparation_platform.dto.QuizResultResponseDTO;
+import com.jobprep.job_preparation_platform.dto.QuizStatisticsResponseDTO;
 import com.jobprep.job_preparation_platform.exception.DuplicateAnswerException;
 import com.jobprep.job_preparation_platform.exception.InvalidQuestionException;
 import com.jobprep.job_preparation_platform.exception.QuizNotFoundException;
@@ -275,5 +276,59 @@ public class QuizAttemptService {
                                 attempt.getScore(),
                                 attempt.getTotalQuestions(),
                                 answerDTOs);
+        }
+
+        public QuizStatisticsResponseDTO getMyStatistics(String email) {
+
+                User user = userRepository.findByEmail(email)
+                                .orElseThrow(() -> new RuntimeException("User not found"));
+
+                List<QuizAttempt> attempts = quizAttemptRepository.findByUserId(user.getId());
+
+                long totalAttempts = attempts.size();
+
+                List<QuizAttempt> completedAttempts = attempts.stream()
+                                .filter(attempt -> "COMPLETED".equals(attempt.getStatus()))
+                                .toList();
+
+                long completedCount = completedAttempts.size();
+
+                double totalPercentage = 0.0;
+                double highestPercentage = 0.0;
+                long totalCorrectAnswers = 0;
+
+                for (QuizAttempt attempt : completedAttempts) {
+
+                        int totalQuestions = attempt.getTotalQuestions() != null
+                                        ? attempt.getTotalQuestions()
+                                        : 0;
+
+                        int score = attempt.getScore() != null
+                                        ? attempt.getScore()
+                                        : 0;
+
+                        double percentage = totalQuestions > 0
+                                        ? (score * 100.0) / totalQuestions
+                                        : 0.0;
+
+                        totalPercentage += percentage;
+
+                        if (percentage > highestPercentage) {
+                                highestPercentage = percentage;
+                        }
+
+                        totalCorrectAnswers += score;
+                }
+
+                double averagePercentage = completedCount > 0
+                                ? totalPercentage / completedCount
+                                : 0.0;
+
+                return new QuizStatisticsResponseDTO(
+                                totalAttempts,
+                                completedCount,
+                                Math.round(averagePercentage * 100.0) / 100.0,
+                                Math.round(highestPercentage * 100.0) / 100.0,
+                                totalCorrectAnswers);
         }
 }

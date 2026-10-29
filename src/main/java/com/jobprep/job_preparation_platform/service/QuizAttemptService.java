@@ -1,6 +1,11 @@
 package com.jobprep.job_preparation_platform.service;
 
+import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.HashMap;
 
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -25,6 +30,7 @@ import com.jobprep.job_preparation_platform.dto.QuizAttemptResponseDTO;
 import com.jobprep.job_preparation_platform.dto.QuizResultAnswerDTO;
 import com.jobprep.job_preparation_platform.dto.QuizResultResponseDTO;
 import com.jobprep.job_preparation_platform.dto.QuizStatisticsResponseDTO;
+import com.jobprep.job_preparation_platform.dto.TopicPerformanceDTO;
 import com.jobprep.job_preparation_platform.exception.DuplicateAnswerException;
 import com.jobprep.job_preparation_platform.exception.InvalidQuestionException;
 import com.jobprep.job_preparation_platform.exception.QuizNotFoundException;
@@ -194,6 +200,8 @@ public class QuizAttemptService {
                 attempt.setScore(score);
                 attempt.setStatus("COMPLETED");
 
+                attempt.setCompletedAt(LocalDateTime.now());
+
                 QuizAttempt savedAttempt = quizAttemptRepository.save(attempt);
 
                 return new QuizAttemptResponseDTO(
@@ -230,13 +238,31 @@ public class QuizAttemptService {
 
                 Page<QuizAttempt> attemptPage = quizAttemptRepository.findByUserId(user.getId(), pageable);
 
-                return attemptPage.map(attempt -> new QuizAttemptResponseDTO(
-                                attempt.getId(),
-                                attempt.getQuiz().getId(),
-                                attempt.getQuiz().getTitle(),
-                                attempt.getScore(),
-                                attempt.getTotalQuestions(),
-                                attempt.getStatus()));
+                return attemptPage.map(attempt -> {
+                        QuizAttemptResponseDTO dto = new QuizAttemptResponseDTO(
+                                        attempt.getId(),
+                                        attempt.getQuiz().getId(),
+                                        attempt.getQuiz().getTitle(),
+                                        attempt.getScore(),
+                                        attempt.getTotalQuestions(),
+                                        attempt.getStatus());
+
+                        dto.setStartedAt(attempt.getStartedAt());
+                        dto.setCompletedAt(attempt.getCompletedAt());
+
+                        Long durationSeconds = null;
+
+                        if (attempt.getStartedAt() != null
+                                        && attempt.getCompletedAt() != null) {
+                                durationSeconds = java.time.Duration.between(
+                                                attempt.getStartedAt(),
+                                                attempt.getCompletedAt()).getSeconds();
+                        }
+
+                        dto.setDurationSeconds(durationSeconds);
+
+                        return dto;
+                });
         }
 
         public QuizResultResponseDTO getAttemptResults(
@@ -269,13 +295,29 @@ public class QuizAttemptService {
                                                 Boolean.TRUE.equals(answer.getIsCorrect())))
                                 .toList();
 
-                return new QuizResultResponseDTO(
+                QuizResultResponseDTO response = new QuizResultResponseDTO(
                                 attempt.getId(),
                                 attempt.getQuiz().getTitle(),
                                 attempt.getStatus(),
                                 attempt.getScore(),
                                 attempt.getTotalQuestions(),
                                 answerDTOs);
+
+                response.setStartedAt(attempt.getStartedAt());
+                response.setCompletedAt(attempt.getCompletedAt());
+
+                if (attempt.getStartedAt() != null
+                                && attempt.getCompletedAt() != null) {
+
+                        long durationSeconds = java.time.Duration.between(
+                                        attempt.getStartedAt(),
+                                        attempt.getCompletedAt()).getSeconds();
+
+                        response.setDurationSeconds(durationSeconds);
+                }
+
+                return response;
+
         }
 
         public QuizStatisticsResponseDTO getMyStatistics(String email) {
@@ -331,4 +373,72 @@ public class QuizAttemptService {
                                 Math.round(highestPercentage * 100.0) / 100.0,
                                 totalCorrectAnswers);
         }
+
+        public List<TopicPerformanceDTO> getTopicPerformance(String email) {
+
+                User user = userRepository.findByEmail(email)
+                                .orElseThrow(() -> new RuntimeException("User not found"));
+
+                // Get all quiz attempts belonging to this user.
+                List<QuizAttempt> attempts = quizAttemptRepository.findByUserId(user.getId());
+
+                // Store attempted and correct answer counts for each topic.
+                Map<String, long[]> topicCounts = new HashMap<>();
+
+                for (QuizAttempt attempt : attempts) {
+
+                        // Only include completed quiz attempts.
+                        if (!"COMPLETED".equals(attempt.getStatus())) {
+                                continue;
+                        }
+
+                        List<QuizAttemptAnswer> answers = quizAttemptAnswerRepository.findByQuizAttemptId(
+                                        attempt.getId());
+
+                        for (QuizAttemptAnswer answer : answers) {
+
+                                String topic = answer.getQuestion().getTopic();
+
+                                if (topic == null || topic.isBlank()) {
+                                        topic = "Uncategorized";
+                                }
+
+                                long[] counts = topicCounts.computeIfAbsent(
+                                                topic, key -> new long[2]);
+
+                                // Index 0 = attempted answers; index 1 = correct answers.
+                                counts[0]++;
+
+                                if (Boolean.TRUE.equals(answer.getIsCorrect())) {
+                                        counts[1]++;
+                                }
+                        }
+                }
+
+                List<TopicPerformanceDTO> results = new ArrayList<>();
+
+                for (Map.Entry<String, long[]> entry : topicCounts.entrySet()) {
+
+                        String topic = entry.getKey();
+                        long attempted = entry.getValue()[0];
+                        long correct = entry.getValue()[1];
+
+                        double accuracy = attempted > 0
+                                        ? (correct * 100.0) / attempted
+                                        : 0.0;
+
+                        accuracy = Math.round(accuracy * 100.0) / 100.0;
+
+                        results.add(new TopicPerformanceDTO(
+                                        topic, attempted, correct, accuracy));
+                }
+
+                // Return topics in alphabetical order.
+                results.sort(Comparator.comparing(
+                                TopicPerformanceDTO::getTopic,
+                                String.CASE_INSENSITIVE_ORDER));
+
+                return results;
+        }
+
 }

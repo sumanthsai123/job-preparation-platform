@@ -1,5 +1,6 @@
 package com.jobprep.job_preparation_platform.dto;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 public class QuizResultResponseDTO {
@@ -10,6 +11,9 @@ public class QuizResultResponseDTO {
     private Integer score;
     private Integer totalQuestions;
     private List<QuizResultAnswerDTO> answers;
+    private LocalDateTime startedAt;
+    private LocalDateTime completedAt;
+    private Long durationSeconds;
 
     public QuizResultResponseDTO(
             Integer attemptId,
@@ -73,5 +77,29 @@ public class QuizResultResponseDTO {
 
     public void setAnswers(List<QuizResultAnswerDTO> answers) {
         this.answers = answers;
+    }
+
+    public LocalDateTime getStartedAt() {
+        return startedAt;
+    }   
+
+    public void setStartedAt(LocalDateTime startedAt) {
+        this.startedAt = startedAt;
+    }
+
+    public LocalDateTime getCompletedAt() {
+        return completedAt;
+    }
+
+    public void setCompletedAt(LocalDateTime completedAt) {
+        this.completedAt = completedAt;
+    }
+
+    public Long getDurationSeconds() {
+        return durationSeconds;
+    }   
+
+    public void setDurationSeconds(Long durationSeconds) {
+        this.durationSeconds = durationSeconds;
     }
 }

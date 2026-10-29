@@ -1,10 +1,13 @@
 package com.jobprep.job_preparation_platform;
 
+import java.time.LocalDateTime;
+
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.PrePersist;
 
 @Entity
 public class QuizAttempt {
@@ -24,6 +27,17 @@ public class QuizAttempt {
     private Integer totalQuestions;
 
     private String status;
+
+    private LocalDateTime startedAt;
+
+    private LocalDateTime completedAt;
+
+    @PrePersist
+    public void setStartedAtBeforeSaving() {
+        if (startedAt == null) {
+            startedAt = LocalDateTime.now();
+        }
+    }
 
     public QuizAttempt() {
     }
@@ -74,5 +88,21 @@ public class QuizAttempt {
 
     public void setStatus(String status) {
         this.status = status;
+    }
+
+    public LocalDateTime getStartedAt() {
+        return startedAt;
+    }
+
+    public void setStartedAt(LocalDateTime startedAt) {
+        this.startedAt = startedAt;
+    }
+
+    public LocalDateTime getCompletedAt() {
+        return completedAt;
+    }
+
+    public void setCompletedAt(LocalDateTime completedAt) {
+        this.completedAt = completedAt;
     }
 }

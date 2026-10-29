@@ -2,6 +2,8 @@ package com.jobprep.job_preparation_platform.controller;
 
 import org.springframework.security.core.Authentication;
 
+import java.util.List;
+
 import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -12,6 +14,7 @@ import com.jobprep.job_preparation_platform.dto.QuizAnswerRequestDTO;
 import com.jobprep.job_preparation_platform.dto.QuizAttemptResponseDTO;
 import com.jobprep.job_preparation_platform.dto.QuizResultResponseDTO;
 import com.jobprep.job_preparation_platform.dto.QuizStatisticsResponseDTO;
+import com.jobprep.job_preparation_platform.dto.TopicPerformanceDTO;
 import com.jobprep.job_preparation_platform.service.QuizAttemptService;
 
 import jakarta.validation.Valid;
@@ -99,6 +102,17 @@ public class QuizAttemptController {
         QuizStatisticsResponseDTO statistics = quizAttemptService.getMyStatistics(email);
 
         return ResponseEntity.ok(statistics);
+    }
+
+    @GetMapping("/my-topic-performance")
+    public ResponseEntity<List<TopicPerformanceDTO>> getMyTopicPerformance(
+            Authentication authentication) {
+
+        String email = authentication.getName();
+
+        List<TopicPerformanceDTO> performance = quizAttemptService.getTopicPerformance(email);
+
+        return ResponseEntity.ok(performance);
     }
 
 }

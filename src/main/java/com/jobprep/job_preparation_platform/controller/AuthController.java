@@ -1,10 +1,14 @@
 package com.jobprep.job_preparation_platform.controller;
 
+import java.util.Map;   
+
 import jakarta.validation.Valid;
 
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import com.jobprep.job_preparation_platform.dto.AuthResponseDTO;
 import com.jobprep.job_preparation_platform.dto.LoginRequestDTO;
 import com.jobprep.job_preparation_platform.dto.RegisterRequestDTO;
 import com.jobprep.job_preparation_platform.dto.RegisterResponseDTO;
@@ -32,17 +36,22 @@ public class AuthController {
     }
 
     @PostMapping("/login")
-    public ResponseEntity<String> login(
-            @RequestBody LoginRequestDTO request) {
+    public ResponseEntity<?> login(
+            @Valid @RequestBody LoginRequestDTO request) {
 
         String token = userService.loginUser(request);
 
         if (token != null) {
-            return ResponseEntity.ok(token);
+            AuthResponseDTO response = new AuthResponseDTO(
+                    token,
+                    "Bearer");
+            return ResponseEntity.ok(response);
         }
 
-        return ResponseEntity
-                .status(401)
-                .body("Invalid email or password");
+        // return ResponseEntity
+        //         .status(401)
+        //         .body("Invalid email or password");
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                .body(Map.of("error", "Invalid email or password"));
     }
 }

@@ -41,7 +41,8 @@ public class UserService {
                 User user = new User();
 
                 user.setName(request.getName());
-                user.setEmail(request.getEmail());
+                String email = request.getEmail().trim().toLowerCase();
+                user.setEmail(email);
 
                 String encodedPassword = passwordEncoder.encode(request.getPassword());
 
@@ -60,8 +61,10 @@ public class UserService {
 
         public String loginUser(LoginRequestDTO request) {
 
+                String  email = request.getEmail().trim().toLowerCase();
+
                 User user = userRepository
-                                .findByEmail(request.getEmail())
+                                .findByEmail(email)
                                 .orElse(null);
 
                 if (user == null) {

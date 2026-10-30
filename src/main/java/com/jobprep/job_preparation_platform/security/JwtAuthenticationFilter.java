@@ -33,10 +33,10 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         String authHeader = request.getHeader("Authorization");
 
-        System.out.println("================================");
-        System.out.println("METHOD: " + request.getMethod());
-        System.out.println("URI: " + request.getRequestURI());
-        System.out.println("AUTH HEADER PRESENT: " + (authHeader != null));
+        // System.out.println("================================");
+        // System.out.println("METHOD: " + request.getMethod());
+        // System.out.println("URI: " + request.getRequestURI());
+        // System.out.println("AUTH HEADER PRESENT: " + (authHeader != null));
 
         // No JWT
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
@@ -50,15 +50,15 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         boolean tokenValid = jwtService.isTokenValid(token);
 
-        System.out.println("TOKEN VALID: " + tokenValid);
+        // System.out.println("TOKEN VALID: " + tokenValid);
 
         if (tokenValid) {
 
             String email = jwtService.extractUsername(token);
             String role = jwtService.extractRole(token);
 
-            System.out.println("EMAIL: " + email);
-            System.out.println("ROLE: " + role);
+        //     System.out.println("EMAIL: " + email);
+        //     System.out.println("ROLE: " + role);
 
             UsernamePasswordAuthenticationToken authentication =
                     new UsernamePasswordAuthenticationToken(
